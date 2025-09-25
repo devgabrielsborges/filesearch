@@ -1,6 +1,6 @@
 import type { Node_ } from "./Node_";
 
-class Stack<T> {
+export class Stack<T> {
     private top: Node_<T> | null = null;
     private _size: number = 0;
 

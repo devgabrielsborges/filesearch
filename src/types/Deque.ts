@@ -1,6 +1,6 @@
 import type { Node_ } from "./Node_";
 
-class Deque<T> {
+export class Deque<T> {
     private head: Node_<T> | null = null;
     private tail: Node_<T> | null = null;
     private _size: number = 0;
@@ -85,5 +85,29 @@ class Deque<T> {
         this.head = null;
         this.tail = null;
         this._size = 0;
+    }
+
+    toArray(): T[] {
+        const items: T[] = [];
+        let current = this.head;
+        while (current) {
+            items.push(current.data);
+            current = current.next;
+        }
+        return items;
+    }
+
+    [Symbol.iterator](): Iterator<T> {
+        let current = this.head;
+        return {
+            next: (): IteratorResult<T> => {
+                if (!current) {
+                    return { done: true, value: undefined as unknown as T };
+                }
+                const value = current.data;
+                current = current.next;
+                return { done: false, value };
+            }
+        };
     }
 }

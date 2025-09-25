@@ -1,6 +1,6 @@
 import type { Node_ } from "./Node_";
 
-class List<T> {
+export class List<T> {
     private head: Node_<T> | null = null;
     private tail: Node_<T> | null = null;
     private _size: number = 0;
