@@ -1,33 +1,69 @@
-# .
+# 📂 Filesearch
 
-This template should help get you started developing with Vue 3 in Vite.
+**Filesearch** é uma ferramenta de busca de arquivos locais desenvolvida em  **TypeScript** , **Vue 3** e  **Vite** .
 
-## Recommended IDE Setup
+O sistema permite buscar arquivos de forma rápida e intuitiva, exibindo os resultados em **ordem de similaridade** com o termo pesquisado.
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Para otimizar a performance, utiliza um **deque** para armazenar os caracteres digitados e implementa **debouncing** para evitar buscas desnecessárias.
 
-## Type Support for `.vue` Imports in TS
+---
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+## 🚀 Funcionalidades
 
-## Customize configuration
+*  **Busca eficiente** em lista de arquivos locais.
+*  **Resultados ordenados por relevância** (similaridade com a pesquisa).
+*  **Deque** para manipulação dinâmica da entrada de caracteres.
+*  **Debouncing inteligente** para reduzir buscas excessivas.
+*  Construído com **Vue 3 + Vite** para máxima performance e DX.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+---
 
-## Project Setup
+## 📖 Como funciona
 
-```sh
-pnpm install
+1. O usuário digita os caracteres do termo de busca.
+2. O **deque** armazena os caracteres em tempo real.
+3. O **debouncing** aguarda o usuário parar de digitar antes de disparar a busca.
+4. Os arquivos encontrados são exibidos em ordem de  **similaridade** .
+
+---
+
+## 🛠️ Tecnologias utilizadas
+
+* [TypeScript](https://www.typescriptlang.org/)
+* [Vue 3](https://vuejs.org/) (Composition API)
+* [Vite](https://vitejs.dev/)
+* Estruturas de dados: **Deque**
+* Algoritmos de similaridade (ex.: `String.prototype.localeCompare`, `Levenshtein`, `SequenceMatcher`, etc.)
+
+---
+
+## 📦 Instalação e execução
+
+Clone o repositório:
+
+```bash
+git clone https://github.com/seu-usuario/filesearch.git
+cd filesearch
 ```
 
-### Compile and Hot-Reload for Development
+Instale as dependências:
 
-```sh
-pnpm dev
+```bash
+npm install
+# ou
+yarn install
 ```
 
-### Type-Check, Compile and Minify for Production
+Inicie o ambiente de desenvolvimento:
 
-```sh
-pnpm build
+```bash
+npm run dev
 ```
+
+Build para produção:
+
+```bash
+npm run build
+```
+
+---
