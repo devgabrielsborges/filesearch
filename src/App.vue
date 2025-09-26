@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Deque } from './types/Deque'
 
 type SampleFile = {
@@ -136,22 +136,41 @@ const filteredFiles = computed(() => {
     .map(entry => entry.file)
 })
 
-const ITEMS_PER_PAGE = 9
 const currentPage = ref(1)
 
+const viewportWidth = ref<typeof window extends undefined ? number : number>(
+  typeof window !== 'undefined' ? window.innerWidth : 1024
+)
+
+let resizeHandler: (() => void) | null = null
+onMounted(() => {
+  resizeHandler = () => {
+    viewportWidth.value = window.innerWidth
+  }
+  window.addEventListener('resize', resizeHandler)
+})
+
+onBeforeUnmount(() => {
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+  }
+})
+
+const itemsPerPage = computed(() => (viewportWidth.value < 640 ? 4 : 12))
+
 const totalFiltered = computed(() => filteredFiles.value.length)
-const pageCount = computed(() => (totalFiltered.value === 0 ? 1 : Math.ceil(totalFiltered.value / ITEMS_PER_PAGE)))
+const pageCount = computed(() => (totalFiltered.value === 0 ? 1 : Math.ceil(totalFiltered.value / itemsPerPage.value)))
 
 const paginatedFiles = computed(() => {
   if (!totalFiltered.value) {
     return []
   }
-  const start = (currentPage.value - 1) * ITEMS_PER_PAGE
-  return filteredFiles.value.slice(start, start + ITEMS_PER_PAGE)
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  return filteredFiles.value.slice(start, start + itemsPerPage.value)
 })
 
-const rangeStart = computed(() => (totalFiltered.value ? (currentPage.value - 1) * ITEMS_PER_PAGE + 1 : 0))
-const rangeEnd = computed(() => (totalFiltered.value ? Math.min(rangeStart.value + ITEMS_PER_PAGE - 1, totalFiltered.value) : 0))
+const rangeStart = computed(() => (totalFiltered.value ? (currentPage.value - 1) * itemsPerPage.value + 1 : 0))
+const rangeEnd = computed(() => (totalFiltered.value ? Math.min(rangeStart.value + itemsPerPage.value - 1, totalFiltered.value) : 0))
 const displayedCount = computed(() => paginatedFiles.value.length)
 
 const hasResults = computed(() => totalFiltered.value > 0)
@@ -169,6 +188,10 @@ watch(debouncedQuery, () => {
   setPage(1)
 })
 
+watch(itemsPerPage, () => {
+  setPage(1)
+})
+
 watch(totalFiltered, () => {
   const maxPage = pageCount.value
   if (currentPage.value > maxPage) {
@@ -177,6 +200,9 @@ watch(totalFiltered, () => {
 })
 
 const isImage = (file: SampleFile) => /\b(jpe?g|png|gif|webp|svg|bmp|ico|avif)$/i.test(file.extension)
+
+// Transition the entire page on page change to avoid clipping
+const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${itemsPerPage.value}`)
 </script>
 
 <template>
@@ -210,15 +236,17 @@ const isImage = (file: SampleFile) => /\b(jpe?g|png|gif|webp|svg|bmp|ico|avif)$/
 
     <main class="results" aria-live="polite">
       <div v-if="hasResults">
-        <transition-group name="fade" tag="div" class="file-grid">
-          <article v-for="file in paginatedFiles" :key="file.url" class="file-card">
-            <div class="thumbnail" role="presentation">
-              <img v-if="isImage(file)" :src="file.url" :alt="file.name" loading="lazy" />
-              <div v-else class="placeholder">{{ file.extension ? file.extension.toUpperCase() : 'FILE' }}</div>
-            </div>
-            <p class="file-name" :title="file.name">{{ file.name }}</p>
-          </article>
-        </transition-group>
+        <transition name="fade" mode="out-in">
+          <div class="file-grid" :key="pageKey">
+            <article v-for="file in paginatedFiles" :key="file.url" class="file-card">
+              <div class="thumbnail" role="presentation">
+                <img v-if="isImage(file)" :src="file.url" :alt="file.name" loading="lazy" />
+                <div v-else class="placeholder">{{ file.extension ? file.extension.toUpperCase() : 'FILE' }}</div>
+              </div>
+              <p class="file-name" :title="file.name">{{ file.name }}</p>
+            </article>
+          </div>
+        </transition>
 
         <nav v-if="pageNumbers.length > 1" class="pagination" aria-label="Paginação de resultados">
           <button type="button" class="page-control" :disabled="currentPage === 1" @click="goToPrevious">
