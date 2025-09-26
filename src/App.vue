@@ -177,6 +177,46 @@ const displayedCount = computed(() => paginatedFiles.value.length)
 const hasResults = computed(() => totalFiltered.value > 0)
 const pageNumbers = computed(() => (hasResults.value ? Array.from({ length: pageCount.value }, (_, index) => index + 1) : []))
 
+const visiblePages = computed(() => {
+  const total = pageCount.value
+  const current = currentPage.value
+  const maxVisible = 5
+
+  if (total <= maxVisible) {
+    return pageNumbers.value
+  }
+
+  const result: (number | string)[] = []
+
+  // Always show first page
+  if (1 < current - 2) {
+    result.push(1)
+    if (1 < current - 3) {
+      result.push('...')
+    }
+  }
+
+  // Show pages around current
+  const start = Math.max(1, Math.min(current - 1, total - maxVisible + 1))
+  const end = Math.min(total, start + maxVisible - 1)
+
+  for (let i = start; i <= end; i++) {
+    if (!result.includes(i)) {
+      result.push(i)
+    }
+  }
+
+  // Always show last page
+  if (total > end + 1) {
+    if (total > end + 2) {
+      result.push('...')
+    }
+    result.push(total)
+  }
+
+  return result
+})
+
 const setPage = (page: number) => {
   if (page < 1 || page > pageCount.value) return
   currentPage.value = page
@@ -254,8 +294,9 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
             Anterior
           </button>
           <ul class="page-list">
-            <li v-for="page in pageNumbers" :key="page">
+            <li v-for="page in visiblePages" :key="page">
               <button
+                v-if="typeof page === 'number'"
                 type="button"
                 class="page-number"
                 :class="{ active: page === currentPage }"
@@ -263,6 +304,7 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
               >
                 {{ page }}
               </button>
+              <span v-else class="page-ellipsis">{{ page }}</span>
             </li>
           </ul>
           <button type="button" class="page-control" :disabled="currentPage === pageNumbers.length" @click="goToNext">
@@ -282,14 +324,16 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 <style scoped>
 .shell {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(18px);
   border-radius: 32px;
-  padding: clamp(2rem, 5vw, 3.5rem);
+  padding: clamp(1rem, 3vw, 3.5rem);
   box-shadow: 0 20px 60px rgba(25, 42, 72, 0.16);
   display: flex;
   flex-direction: column;
-  gap: clamp(1.5rem, 3vw, 2.5rem);
+  gap: clamp(1rem, 2vw, 2.5rem);
 }
 
 .hero {
@@ -300,7 +344,7 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 }
 
 .title {
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(1.5rem, 5vw, 3rem);
   letter-spacing: 0.12em;
   font-weight: 700;
 }
@@ -370,19 +414,19 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 
 .file-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(clamp(120px, 25vw, 160px), 1fr));
+  gap: 1rem;
 }
 
 .file-card {
   background: rgba(248, 250, 255, 0.9);
   border-radius: 20px;
-  padding: 1rem;
+  padding: 0.75rem;
   box-shadow: 0 12px 28px rgba(25, 42, 72, 0.08);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease;
@@ -443,12 +487,20 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 }
 
 .pagination {
-  margin-top: 2rem;
+  margin-top: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
+  padding: 0 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.pagination::-webkit-scrollbar {
+  display: none;
 }
 
 .page-list {
@@ -464,9 +516,9 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
   border: 1px solid rgba(46, 64, 87, 0.2);
   background: rgba(255, 255, 255, 0.85);
   color: rgba(24, 24, 24, 0.75);
-  padding: 0.5rem 0.85rem;
+  padding: 0.4rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
@@ -502,7 +554,13 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 }
 
 .page-number {
-  min-width: 44px;
+  min-width: 36px;
+}
+
+.page-ellipsis {
+  padding: 0.4rem 0.5rem;
+  color: rgba(24, 24, 24, 0.5);
+  font-size: 0.85rem;
 }
 
 .fade-enter-active,
@@ -523,6 +581,37 @@ const pageKey = computed(() => `${debouncedQuery.value}|${currentPage.value}|${i
 
   .summary {
     text-align: left;
+  }
+
+  .file-grid {
+    gap: 1.25rem;
+  }
+
+  .file-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .pagination {
+    margin-top: 2rem;
+    gap: 1rem;
+    padding: 0;
+    overflow-x: visible;
+  }
+
+  .page-control,
+  .page-number {
+    padding: 0.5rem 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  .page-number {
+    min-width: 44px;
+  }
+
+  .page-ellipsis {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
   }
 }
 </style>
