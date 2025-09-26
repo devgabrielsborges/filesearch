@@ -15,15 +15,16 @@ const modules = import.meta.glob('../public/samples/*', {
 }) as Record<string, string>
 
 const files: SampleFile[] = Object.entries(modules)
-  .map(([path, url]) => {
+  .map(([path]) => {
     const segments = path.split('/')
     const name = segments[segments.length - 1] ?? ''
     const extension = name.split('.').pop()?.toLowerCase() ?? ''
-    const normalizedUrl = url.replace(/^\/public/, '')
+    // Use the URL provided by Vite's import.meta.glob
+    const url = modules[path]
 
     return {
       name,
-      url: normalizedUrl,
+      url,
       extension
     }
   })
